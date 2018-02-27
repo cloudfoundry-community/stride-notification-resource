@@ -1,0 +1,31 @@
+resources:
+- name: github
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry-community/stride-notification-resource.git
+    branch: master
+    private_key: (( vault "secret/pipelines/shared/github:private" ))
+
+- name: dockerhub
+  type: docker-image
+  source:
+    username: (( vault "secret/dockerhub:username" ))
+    password: (( vault "secret/dockerhub:password" ))
+    repository: starkandwayne/stride-notification-resource
+
+jobs:
+- name: build
+  serial: true
+  plan:
+  - get: dockerfiles
+    resource: github
+    trigger: true
+  - put: dockerhub
+    params:
+      build: dockerfiles
+      tag_as_latest: true
+
+groups:
+- name: build
+  jobs:
+  - build

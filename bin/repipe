@@ -1,0 +1,23 @@
+#!/bin/bash
+
+cd "$( dirname "${BASH_SOURCE[0]}" )/../ci"
+
+set -e
+
+
+TARGET="$1"
+if [[ -z $TARGET ]]; then
+  echo "Please specify fly target name as first arg"
+  exit 1
+fi
+
+set -eu
+
+PIPELINE_NAME="stride-notification-resource"
+PIPELINE=$(mktemp /tmp/pipeline.XXXXX)
+
+spruce merge pipeline.yml > ${PIPELINE}
+
+fly -t ${TARGET} set-pipeline -c ${PIPELINE} -p ${PIPELINE_NAME}
+
+rm -rf $PIPELINE

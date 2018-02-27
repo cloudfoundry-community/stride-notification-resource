@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -e
+
+if [[ -z $CLIENT_ID ]]; then
+  echo must define CLIENT_ID
+  exit 1
+fi
+
+if [[ -z $CLIENT_SECRET ]]; then
+  echo must define CLIENT_SECRET
+  exit 1
+fi
+
+if [[ -z $CLOUD_ID ]]; then
+	echo must define CLOUD_ID
+fi
+
+if [[ -z $CONVERSATION_NAME ]]; then
+  echo must define CONVERSATION_NAME
+  exit 1
+fi
+
+if [[ -z $MESSAGE ]]; then
+  echo must define MESSAGE
+fi
+
+echo "Getting access token"
+
+ACCESS_TOKEN="$(\
+  curl -X POST \
+  'https://api.atlassian.com/oauth/token' \
+  -H 'content-type: application/json' \
+  -d '{
+        "grant_type":"client_credentials",
+        "client_id": "'"${CLIENT_ID}"'",
+        "client_secret": "'"${CLIENT_SECRET}"'"
+      }' 2>/dev/null \
+  | jq .access_token -Mr)"
+
+echo "Looking up conversation ID"
+
+CONVERSATION_ID="$(\
+  curl "https://api.atlassian.com/site/${CLOUD_ID}/conversation" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null \
+  | jq '.values[] | select(.name == "'"${CONVERSATION_NAME}"'") | .id' -Mr)"
+
+echo "Sending the message"
+
+curl -X POST \
+"https://api.atlassian.com/site/${CLOUD_ID}/conversation/${CONVERSATION_ID}/message" \
+-H "Authorization: Bearer ${ACCESS_TOKEN}" \
+-H "Content-Type: application/json" \
+-d '{
+      "version": 1,
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "'"${MESSAGE}"'"
+            }
+          ]
+        }
+      ]
+    }' 2>/dev/null
+
+
