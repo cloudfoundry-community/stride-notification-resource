@@ -5,6 +5,12 @@ resources:
     uri: git@github.com:cloudfoundry-community/stride-notification-resource.git
     branch: master
     private_key: (( vault "secret/pipelines/shared/github:private" ))
+    ignore_paths:
+    - ci/*
+    - bin/*
+    - .gitignore
+    - README.md
+    - LICENSE
 
 - name: dockerhub
   type: docker-image
