@@ -4,42 +4,42 @@ set -e
 
 config="$(cat <&0)"
 
-echo "Parsing source"
+echo "Parsing source" >&2
 
 client_id=$(echo "$config" | jq -Mr '.source.client_id')
 client_secret=$(echo "$config" | jq -Mr '.source.client_secret')
 cloud_id=$(echo "$config" | jq -Mr '.source.cloud_id')
 
 if [[ -z $client_id ]]; then
-  echo "must define 'client_id' in source config"
+  echo "must define 'client_id' in source config" >&2
   exit 1
 fi
 
 if [[ -z $client_secret ]]; then
-  echo "must define 'client_secret' in source config"
+  echo "must define 'client_secret' in source config" >&2
   exit 1
 fi
 
 if [[ -z $cloud_id ]]; then
-	echo "must define 'cloud_id' in source config"
+	echo "must define 'cloud_id' in source config" >&2
 fi
 
-echo "Parsing params"
+echo "Parsing params" >&2
 
 conversation=$(echo "$config" | jq -Mr '.params.conversation')
 message=$(echo "$config" | jq -Mr '.params.message')
 
 
 if [[ -z $conversation ]]; then
-  echo "must define 'conversation' in out params"
+  echo "must define 'conversation' in out params" >&2
   exit 1
 fi
 
 if [[ -z $message ]]; then
-  echo "must define 'message' in out params"
+  echo "must define 'message' in out params" >&2
 fi
 
-echo "Getting access token"
+echo "Getting access token" >&2
 
 access_token="$(\
   curl -X POST \
@@ -52,14 +52,14 @@ access_token="$(\
       }' 2>/dev/null \
   | jq .access_token -Mr)"
 
-echo "Looking up conversation ID"
+echo "Looking up conversation ID" >&2
 
 conv_id="$(\
   curl "https://api.atlassian.com/site/${cloud_id}/conversation" \
   -H "Authorization: Bearer ${access_token}" 2>/dev/null \
   | jq '.values[] | select(.name == "'"${conversation}"'") | .id' -Mr)"
 
-echo "Sending the message"
+echo "Sending the message" >&2
 
 curl -X POST \
 "https://api.atlassian.com/site/${cloud_id}/conversation/${conv_id}/message" \
