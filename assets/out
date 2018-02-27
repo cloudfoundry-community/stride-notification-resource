@@ -81,4 +81,9 @@ curl -X POST \
       ]
     }' 2>/dev/null
 
-echo '[{"ref": "none"}]'
+echo '{
+        "version": {
+          "ref": "none"
+        },
+        "metadata": []
+      }'
