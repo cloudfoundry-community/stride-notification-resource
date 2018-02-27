@@ -61,7 +61,7 @@ conv_id="$(\
 
 echo "Sending the message" >&2
 
-curl -X POST \
+response=$(curl -X POST \
 "https://api.atlassian.com/site/${cloud_id}/conversation/${conv_id}/message" \
 -H "Authorization: Bearer ${access_token}" \
 -H "Content-Type: application/json" \
@@ -79,11 +79,15 @@ curl -X POST \
           ]
         }
       ]
-    }' 2>/dev/null
+    }' 2>/dev/null)
+
+
 
 echo '{
         "version": {
           "ref": "none"
         },
-        "metadata": []
+        "metadata": [
+          {"name": "id", "value": "'"$(echo $response | jq -Mr '.id')"'"}
+        ]
       }'
