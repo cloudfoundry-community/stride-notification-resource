@@ -2,7 +2,9 @@
 
 set -e
 
-config=$(cat <&0)
+config="$(cat <&0)"
+
+echo "Parsing source"
 
 client_id=$(echo "$config" | jq -Mr '.source.client_id')
 client_secret=$(echo "$config" | jq -Mr '.source.client_secret')
@@ -21,6 +23,8 @@ fi
 if [[ -z $cloud_id ]]; then
 	echo "must define 'cloud_id' in source config"
 fi
+
+echo "Parsing params"
 
 conversation=$(echo "$config" | jq -Mr '.params.conversation')
 message=$(echo "$config" | jq -Mr '.params.message')
