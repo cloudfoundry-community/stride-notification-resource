@@ -2,7 +2,7 @@
 
 set -e
 
-config=$(cat &0)
+config=$(cat <&0)
 
 client_id=$(echo "$config" | jq -Mr '.source.client_id')
 client_secret=$(echo "$config" | jq -Mr '.source.client_secret')
