@@ -2,54 +2,64 @@
 
 set -e
 
-if [[ -z $CLIENT_ID ]]; then
-  echo must define CLIENT_ID
+config=$(cat &0)
+
+client_id=$(echo "$config" | jq -Mr '.source.client_id')
+client_secret=$(echo "$config" | jq -Mr '.source.client_secret')
+cloud_id=$(echo "$config" | jq -Mr '.source.cloud_id')
+
+if [[ -z $client_id ]]; then
+  echo "must define 'client_id' in source config"
   exit 1
 fi
 
-if [[ -z $CLIENT_SECRET ]]; then
-  echo must define CLIENT_SECRET
+if [[ -z $client_secret ]]; then
+  echo "must define 'client_secret' in source config"
   exit 1
 fi
 
-if [[ -z $CLOUD_ID ]]; then
-	echo must define CLOUD_ID
+if [[ -z $cloud_id ]]; then
+	echo "must define 'cloud_id' in source config"
 fi
 
-if [[ -z $CONVERSATION_NAME ]]; then
-  echo must define CONVERSATION_NAME
+conversation=$(echo "$config" | jq -Mr '.params.conversation')
+message=$(echo "$config" | jq -Mr '.params.message')
+
+
+if [[ -z $conversation ]]; then
+  echo "must define 'conversation' in out params"
   exit 1
 fi
 
-if [[ -z $MESSAGE ]]; then
-  echo must define MESSAGE
+if [[ -z $message ]]; then
+  echo "must define 'message' in out params"
 fi
 
 echo "Getting access token"
 
-ACCESS_TOKEN="$(\
+access_token="$(\
   curl -X POST \
   'https://api.atlassian.com/oauth/token' \
   -H 'content-type: application/json' \
   -d '{
         "grant_type":"client_credentials",
-        "client_id": "'"${CLIENT_ID}"'",
-        "client_secret": "'"${CLIENT_SECRET}"'"
+        "client_id": "'"${client_id}"'",
+        "client_secret": "'"${client_secret}"'"
       }' 2>/dev/null \
   | jq .access_token -Mr)"
 
 echo "Looking up conversation ID"
 
-CONVERSATION_ID="$(\
-  curl "https://api.atlassian.com/site/${CLOUD_ID}/conversation" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null \
-  | jq '.values[] | select(.name == "'"${CONVERSATION_NAME}"'") | .id' -Mr)"
+conv_id="$(\
+  curl "https://api.atlassian.com/site/${cloud_id}/conversation" \
+  -H "Authorization: Bearer ${access_token}" 2>/dev/null \
+  | jq '.values[] | select(.name == "'"${conversation}"'") | .id' -Mr)"
 
 echo "Sending the message"
 
 curl -X POST \
-"https://api.atlassian.com/site/${CLOUD_ID}/conversation/${CONVERSATION_ID}/message" \
--H "Authorization: Bearer ${ACCESS_TOKEN}" \
+"https://api.atlassian.com/site/${cloud_id}/conversation/${conv_id}/message" \
+-H "Authorization: Bearer ${access_token}" \
 -H "Content-Type: application/json" \
 -d '{
       "version": 1,
@@ -60,7 +70,7 @@ curl -X POST \
           "content": [
             {
               "type": "text",
-              "text": "'"${MESSAGE}"'"
+              "text": "'"${message}"'"
             }
           ]
         }
