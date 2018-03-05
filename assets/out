@@ -59,10 +59,6 @@ else
     }'
 fi
 
-#TODO: Take this out
-echo 'DOCUMENT'
-echo "$document"
-
 echo "Getting access token" >&2
 
 access_token="$(\
