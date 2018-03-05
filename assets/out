@@ -10,34 +10,58 @@ client_id=$(echo "$config" | jq -Mr '.source.client_id')
 client_secret=$(echo "$config" | jq -Mr '.source.client_secret')
 cloud_id=$(echo "$config" | jq -Mr '.source.cloud_id')
 
-if [[ -z $client_id ]]; then
+if [[ -z "$client_id" ]]; then
   echo "must define 'client_id' in source config" >&2
   exit 1
 fi
 
-if [[ -z $client_secret ]]; then
+if [[ -z "$client_secret" ]]; then
   echo "must define 'client_secret' in source config" >&2
   exit 1
 fi
 
-if [[ -z $cloud_id ]]; then
+if [[ -z "$cloud_id" ]]; then
 	echo "must define 'cloud_id' in source config" >&2
+	exit 1
 fi
 
 echo "Parsing params" >&2
 
 conversation=$(echo "$config" | jq -Mr '.params.conversation')
-message=$(echo "$config" | jq -Mr '.params.message')
 
-
-if [[ -z $conversation ]]; then
+if [[ -z "$conversation" ]]; then
   echo "must define 'conversation' in out params" >&2
   exit 1
 fi
 
-if [[ -z $message ]]; then
-  echo "must define 'message' in out params" >&2
+if [[ "$(echo "$config" | jq -Mr '.params | has("document")')" == "false" && "$(echo "$config" | jq -Mr '.params | has("message")')" == "false" ]]; then
+  echo "must define 'message' or 'document' in out params" >&2
+  exit 1
 fi
+
+if [[ "$(echo "$config" | jq -Mr '.params | has("document")')" == "true" ]]; then
+  document="$(echo "$config" | jq -Mr '.params.document')"
+else
+  document='{
+      "version": 1,
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "'"$(echo "$config" | jq -Mr '.params.message')"'"
+            }
+          ]
+        }
+      ]
+    }'
+fi
+
+#TODO: Take this out
+echo 'DOCUMENT'
+echo "$document"
 
 echo "Getting access token" >&2
 
@@ -61,33 +85,23 @@ conv_id="$(\
 
 echo "Sending the message" >&2
 
-response=$(curl -X POST \
+response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST \
 "https://api.atlassian.com/site/${cloud_id}/conversation/${conv_id}/message" \
 -H "Authorization: Bearer ${access_token}" \
 -H "Content-Type: application/json" \
--d '{
-      "version": 1,
-      "type": "doc",
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "type": "text",
-              "text": "'"${message}"'"
-            }
-          ]
-        }
-      ]
-    }' 2>/dev/null)
+-d "${document}" 2>/dev/null)
 
+response_body="$(echo "$response" | sed -e 's/HTTPSTATUS\:.*//g')"
+status_code="$(echo "$response" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')"
 
+if [[ "$status_code" != "201" ]]; then
+  echo "Non-successful status code: " "$status_code" >&2
+  echo "$response_body" >&2
+  exit 1
+fi
 
 echo '{
         "version": {
           "ref": "none"
-        },
-        "metadata": [
-          {"name": "id", "value": "'"$(echo $response | jq -Mr '.id')"'"}
-        ]
+        }
       }'
