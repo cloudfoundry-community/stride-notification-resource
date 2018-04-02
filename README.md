@@ -41,7 +41,7 @@ There is no configuration for `get` or `check` because... they don't do anything
 
 * **conversation**: The name of the channel (conversation) you want to post to. Make sure that your
   app is in the relevant conversation.
-* **document**: An Atlassian Document (https://developer.atlassian.com/cloud/stride/apis/document/structure) that gets sent as the Stride message. The contents of this should just be a YAML map. Not a string.
+* **document**: An Atlassian Document (https://developer.atlassian.com/cloud/stride/apis/document/structure) that gets sent as the Stride message. The contents of this should be a YAML map (not a string, just a map nested under `document`) or a literal JSON string.
 * **message**: A shorthand for **params.document** that just sends this string as a plain text message.
 
 Either params.document or params.message must be defined.
